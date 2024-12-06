@@ -341,12 +341,8 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     Q_in = Q_isobar # Calor añadido en isobárica (B -> C)
     Q_out = n_aire * cv * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
 
-    # Cálculo del calor y el porcentaje
-    Q2 = Q_in
-    Q1 = Q_out
-    calor_relacion = 1 + (Q1 / Q2)
-    porcentaje_eficiencia = calor_relacion * 100
-    
+    # Cálculo del porcentaje
+    porcentaje_eficiencia = (1 + (Q_in / Q_out))* 100
     print(f"Porcentaje eficiencia: {porcentaje_eficiencia:.2f}%")
 
     # Gráfico 2D PV 
