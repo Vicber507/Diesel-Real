@@ -316,7 +316,7 @@ def diesel(V_cilindro = 5e-4 , r = 0.0405,P_atm = 101325,T_ext = 298 , rc = 16.5
     PV: diagrama PV
     TV: diagrama TV
     TS: diagrama TS
-    PVT: diagrama PVT
+    PVT:diagrama PVT
     """
 
     gamma = cp/cv    
@@ -350,9 +350,8 @@ def diesel(V_cilindro = 5e-4 , r = 0.0405,P_atm = 101325,T_ext = 298 , rc = 16.5
     V_isomet, P_isomet, T_isomet = isometric(n_aire, V_cilindro, T_d,T_ext)                      # reducción isométrica  (D -> A)
     
     
-    Q_paredes =- np.pi*r*(V_isobar/(np.pi*r**2)) * k * (T_isobar - 500) * (delta_t/150)
+    Q_paredes =- np.pi*r*(V_isobar/(np.pi*r**2)) * k * (T_isobar - 500) * (delta_t/150)* DCP
     Q_perdido = sum(Q_paredes)
-    print (Q_perdido)
 
     #################################################################
     # Calores del ciclo térmico
@@ -366,7 +365,7 @@ def diesel(V_cilindro = 5e-4 , r = 0.0405,P_atm = 101325,T_ext = 298 , rc = 16.5
     print(f"Porcentaje eficiencia: {eficiencia:.2f}%")
     
     # Cálculo del trabajo
-    work = -Q_in - Q_out
+    work = -Q_in - Q_out - Q_perdido
     print(f"Trabajo en el cilindro: {work:.2f}J")
     
     #################################################################
@@ -500,6 +499,3 @@ def diesel(V_cilindro = 5e-4 , r = 0.0405,P_atm = 101325,T_ext = 298 , rc = 16.5
         plt.show()
         
     return [eficiencia, work]
-
-
-diesel()
