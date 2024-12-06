@@ -55,7 +55,6 @@ def adiabatic(n, T_i, T_f, V_i, gamma=1.4):
     T = (P * V) / (n * R)
     return V, P, T
 
-
 def isometric(n,V,T_i,T_f):
     
     """
@@ -291,7 +290,7 @@ def diesel_igas(n,V_min,V_max,T_max,p_iso,gamma=1.4,cp=(7/2)*R,cv=(5/2) * R):
 ###############################################################
 
 
-def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 20,DCP = 0.98,  gamma=1.398, cp=29.16, cv= 20.85, Ani = None):
+def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,DCP = 0.98,  gamma=1.398, cp=29.16, cv= 20.85, s_0 =191.9, anim = False,PV = True,TV = True,TS = True, PVT = True ):
     
     """
     Los valores default son los de un motor 2.0 TDI de Volkswagen.
@@ -299,21 +298,27 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     V_cilindro: volumen del cilindro del motor
     P_atm: presión atmosférica
     T_ext: temperatura exterior
-    rc: relacion de compresion, V_min/V_max
+    rc: relacion de compresion, V_Max/V_min
     AFR: air fuel ratio, aire/combustible
     DCP: porcentaje de combustion de diesel
     gamma: factor adiabatico para gas ideal
     cp: calor específico para el aire, J/(kg·K)
     cv: calor específico para el combustible, J/(kg·K)
+    s_0: entropia molar estandar para el estado inicial J/mol K
+    anim: si se quiere animar el ciclo
+    PV: diagrama PV
+    TV: diagrama TV
+    TS: diagrama TS
+    PVT: diagrama PVT
     """
     
     
     m_aire = (V_cilindro*P_atm) / (287*T_ext)
     n_aire = (m_aire)/ Kgmol_aire
     m_diesel = m_aire / AFR
-    V_min  = V_cilindro * rc
+    V_min  = V_cilindro * (1/rc)
     Q_isobar = Q_comb_diesel * (m_diesel* DCP)
-    T_b = T_ext*(1/rc)**(gamma - 1)
+    T_b = T_ext*(rc)**(gamma - 1)
     T_c = (Q_isobar/(n_aire*cp)) + T_b
     P_iso = (n_aire*R*T_b)/V_min
     V_c = (n_aire*R*T_c)/P_iso
@@ -326,7 +331,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     #####################################
     V_ir = np.linspace(V_cilindro, V_min, 150)
     P_ir = np.linspace(P_atm, P_atm, 150)
-    T_ir = np.linspace(T_ext, T_b, 150)
+    T_ir = np.linspace(T_ext, T_ext, 150)
 
     ######################################
     # Procesos reversibles 
@@ -350,52 +355,87 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     # Cálculo del trabajo
     work = -Q_in - Q_out
     print(f"Trabajo en el cilindro: {work:.2f}J")
+    
+    #################################################################
+    # Entropia del ciclo
+    #################################################################
+    
+    s_ir = np.full_like(T_ir,s_0)
+    s_adiabat  = np.full_like(T_adiabat, s_ir[-1])
+    s_isobar = s_adiabat[-1] + cp*np.log(T_isobar/T_adiabat[-1])
+    s_adiabat_2 = np.full_like(T_adiabat_2,s_isobar[-1])
+    s_isomet = s_adiabat_2 [-1] + cv*np.log(T_isomet/T_adiabat_2[-1])
+    
+    #################################################################
+    # Graficos
+    #################################################################
+    
+    
 
     # Gráfico 2D PV 
-    plt.figure(figsize=(12, 6))
-    # Ahora la admisión y escape son la misma curva, al principio y al final
-    plt.plot(V_ir, P_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
-    plt.plot(V_adiabat, P_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
-    plt.plot(V_isobar, P_isobar, label=f"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
-    plt.plot(V_adiabat_2, P_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
-    plt.plot(V_isomet, P_isomet, label=f"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
-    plt.xlabel("Volumen (m³)")
-    plt.ylabel("Presión (Pa)")
-    plt.title("Ciclo de Diesel en Diagrama PV")
-    plt.legend()
-    plt.grid()
-    plt.show()
+    if PV == True:
+        plt.figure(figsize=(12, 6))
+        # Ahora la admisión y escape son la misma curva, al principio y al final
+        plt.plot(V_ir, P_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
+        plt.plot(V_adiabat, P_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
+        plt.plot(V_isobar, P_isobar, label=f"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
+        plt.plot(V_adiabat_2, P_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
+        plt.plot(V_isomet, P_isomet, label=f"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
+        plt.xlabel("Volumen (m³)")
+        plt.ylabel("Presión (Pa)")
+        plt.title("Ciclo de Diesel en Diagrama PV")
+        plt.legend()
+        plt.grid()
+        plt.show()
 
     # Gráfico 2D TV 
-    plt.figure(figsize=(12, 6))
-    plt.plot(V_ir, T_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
-    plt.plot(V_adiabat, T_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
-    plt.plot(V_isobar, T_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
-    plt.plot(V_adiabat_2, T_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
-    plt.plot(V_isomet, T_isomet, label=rf"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
-    plt.xlabel("Volumen (m³)")
-    plt.ylabel("Temperatura (K)")
-    plt.title("Ciclo de Diesel en Diagrama TV")
-    plt.legend()
-    plt.grid()
-    plt.show()
+    if TV == True:
+        plt.figure(figsize=(12, 6))
+        plt.plot(V_ir, T_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
+        plt.plot(V_adiabat, T_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
+        plt.plot(V_isobar, T_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
+        plt.plot(V_adiabat_2, T_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
+        plt.plot(V_isomet, T_isomet, label=rf"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
+        plt.xlabel("Volumen (m³)")
+        plt.ylabel("Temperatura (K)")
+        plt.title("Ciclo de Diesel en Diagrama TV")
+        plt.legend()
+        plt.grid()
+        plt.show()
+    
+    # Gráfico 2D TS 
+    if TS == True:
+        plt.figure(figsize=(12, 6))
+        plt.plot(s_ir, T_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
+        plt.plot(s_adiabat, T_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
+        plt.plot(s_isobar, T_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
+        plt.plot(s_adiabat_2, T_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
+        plt.plot(s_isomet, T_isomet, label=rf"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
+        plt.xlabel("Entropia molar (J/mol K)")
+        plt.ylabel("Temperatura (K)")
+        plt.title("Ciclo de Diesel en Diagrama TS")
+        plt.legend()
+        plt.grid()
+        plt.show()
+
 
     # Gráfico 3D
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(P_ir, T_ir, V_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
-    ax.plot(P_adiabat, T_adiabat, V_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
-    ax.plot(P_isobar, T_isobar, V_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
-    ax.plot(P_adiabat_2, T_adiabat_2, V_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
-    ax.plot(P_isomet, T_isomet, V_isomet, label=rf"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
-    ax.set_xlabel("Presión (Pa)")
-    ax.set_ylabel("Temperatura (K)")
-    ax.set_zlabel("Volumen (m³)")
-    ax.set_title("Espacio PVT del Ciclo de Diesel")
-    ax.legend()
-    plt.show()
+    if PVT == True:
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(P_ir, T_ir, V_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
+        ax.plot(P_adiabat, T_adiabat, V_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
+        ax.plot(P_isobar, T_isobar, V_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
+        ax.plot(P_adiabat_2, T_adiabat_2, V_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
+        ax.plot(P_isomet, T_isomet, V_isomet, label=rf"Isométrico (D -> A), $Q_{{out}}$ = {round(Q_out)} J", color='mediumseagreen')
+        ax.set_xlabel("Presión (Pa)")
+        ax.set_ylabel("Temperatura (K)")
+        ax.set_zlabel("Volumen (m³)")
+        ax.set_title("Espacio PVT del Ciclo de Diesel")
+        ax.legend()
+        plt.show()
     
-    if Ani != None:
+    if anim == True:
         # Definir el gráfico y la animación
         fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -446,7 +486,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
         # Mostrar la animación
         plt.show()
         
-    return 0
+    return [porcentaje_eficiencia, work]
 
 
 
