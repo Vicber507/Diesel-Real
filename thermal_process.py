@@ -295,7 +295,7 @@ def diesel_igas(n,V_min,V_max,T_max,p_iso,gamma=1.4,cp=(7/2)*R,cv=(5/2) * R):
 ###############################################################
 
 
-def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,DCP = 0.98, cp=29.16, cv= 20.85, s_0 =191.9, anim = False,PV = True,TV = True,TS = True, PVT = True ):
+def diesel(V_cilindro = 5e-4 , r = 0.0405,P_atm = 101325,T_ext = 298 , rc = 16.5 ,k = 500 , AFR = 20,DCP = 0.98, delta_t = 0.1, cp=29.16, cv= 20.85, s_0 =191.9, anim = False,PV = True,TV = True,TS = True, PVT = True ):
     
     """
     Los valores default son los de un motor 2.0 TDI de Volkswagen.
@@ -304,8 +304,10 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     P_atm: presión atmosférica
     T_ext: temperatura exterior
     rc: relacion de compresion, V_Max/V_min
+    k: coeficiente de transferencia de calor, (W/m^2K)
     AFR: air fuel ratio, aire/combustible
     DCP: porcentaje de combustion de diesel
+    delta_t: intervalo de tiempo explosion, o expansion isobarica
     gamma: factor adiabatico para gas ideal
     cp: calor específico para el aire, J/(kg·K)
     cv: calor específico para el combustible, J/(kg·K)
@@ -331,6 +333,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     T_d = T_c*(V_c/V_cilindro)**(gamma - 1)
     
     
+    
     ######################################
     # Procesos irreversibles de admision y escape
     #####################################
@@ -347,14 +350,19 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     V_isomet, P_isomet, T_isomet = isometric(n_aire, V_cilindro, T_d,T_ext)                      # reducción isométrica  (D -> A)
     
     
+    Q_paredes =- np.pi*r*(V_isobar/(np.pi*r**2)) * k * (T_isobar - 500) * (delta_t/150)
+    Q_perdido = sum(Q_paredes)
+    print (Q_perdido)
+
     #################################################################
     # Calores del ciclo térmico
     #################################################################
     Q_in = Q_isobar # Calor añadido en isobárica (B -> C)
     Q_out = n_aire * (cp_comb_prom - R) * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
+    
 
     # Cálculo del porcentaje
-    eficiencia = (1 + (Q_out / Q_in))* 100
+    eficiencia = (1 + (Q_out / (Q_in+Q_perdido)))* 100
     print(f"Porcentaje eficiencia: {eficiencia:.2f}%")
     
     # Cálculo del trabajo
@@ -494,3 +502,4 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     return [eficiencia, work]
 
 
+diesel()
