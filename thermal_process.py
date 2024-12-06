@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.animation import FuncAnimation
 
 ########################################################################
 # @author Victor Bernal
@@ -290,7 +291,7 @@ def diesel_igas(n,V_min,V_max,T_max,p_iso,gamma=1.4,cp=(7/2)*R,cv=(5/2) * R):
 ###############################################################
 
 
-def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 20,  gamma=1.4, cp=(7/2)*R, cv=(5/2) * R):
+def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 20,DCP = 0.98,  gamma=1.398, cp=29.16, cv= 20.85, Ani = None):
     
     """
     Los valores default son los de un motor 2.0 TDI de Volkswagen.
@@ -300,7 +301,8 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     T_ext: temperatura exterior
     rc: relacion de compresion, V_min/V_max
     AFR: air fuel ratio, aire/combustible
-    gamma: factor adiabatigo para gas ideal
+    DCP: porcentaje de combustion de diesel
+    gamma: factor adiabatico para gas ideal
     cp: calor específico para el aire, J/(kg·K)
     cv: calor específico para el combustible, J/(kg·K)
     """
@@ -310,7 +312,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     n_aire = (m_aire)/ Kgmol_aire
     m_diesel = m_aire / AFR
     V_min  = V_cilindro * rc
-    Q_isobar = Q_comb_diesel * m_diesel
+    Q_isobar = Q_comb_diesel * (m_diesel* DCP)
     T_b = T_ext*(1/rc)**(gamma - 1)
     T_c = (Q_isobar/(n_aire*cp)) + T_b
     P_iso = (n_aire*R*T_b)/V_min
@@ -342,13 +344,17 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     Q_out = n_aire * cv * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
 
     # Cálculo del porcentaje
-    porcentaje_eficiencia = (1 + (Q_in / Q_out))* 100
+    porcentaje_eficiencia = (1 + (Q_out / Q_in))* 100
     print(f"Porcentaje eficiencia: {porcentaje_eficiencia:.2f}%")
+    
+    # Cálculo del trabajo
+    work = -Q_in - Q_out
+    print(f"Trabajo en el cilindro: {work:.2f}J")
 
     # Gráfico 2D PV 
     plt.figure(figsize=(12, 6))
     # Ahora la admisión y escape son la misma curva, al principio y al final
-    plt.plot(V_ir, P_ir, label=rf"Admision y escape irreversible ", color='orange')
+    plt.plot(V_ir, P_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
     plt.plot(V_adiabat, P_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
     plt.plot(V_isobar, P_isobar, label=f"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
     plt.plot(V_adiabat_2, P_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
@@ -362,7 +368,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
 
     # Gráfico 2D TV 
     plt.figure(figsize=(12, 6))
-    plt.plot(V_ir, T_ir, label=rf"Admision y escape irreversible ", color='orange')
+    plt.plot(V_ir, T_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
     plt.plot(V_adiabat, T_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
     plt.plot(V_isobar, T_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
     plt.plot(V_adiabat_2, T_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
@@ -377,7 +383,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     # Gráfico 3D
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(P_ir, T_ir, V_ir, label=rf"Admision y escape irreversible ", color='orange')
+    ax.plot(P_ir, T_ir, V_ir, label=rf"Admision y escape irreversible ", color='orange',linestyle='--')
     ax.plot(P_adiabat, T_adiabat, V_adiabat, label=rf"Adiabático (A -> B)", color='royalblue')
     ax.plot(P_isobar, T_isobar, V_isobar, label=rf"Isobárico (B -> C), $Q_{{in}}$ = {round(Q_in)} J", color='darkcyan')
     ax.plot(P_adiabat_2, T_adiabat_2, V_adiabat_2, label=rf"Adiabático (C -> D)", color='firebrick')
@@ -387,5 +393,62 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 1/16.5 ,AFR = 2
     ax.set_zlabel("Volumen (m³)")
     ax.set_title("Espacio PVT del Ciclo de Diesel")
     ax.legend()
-    plt.show()    
+    plt.show()
+    
+    if Ani != None:
+        # Definir el gráfico y la animación
+        fig, ax = plt.subplots(figsize=(12, 6))
 
+        # Número de frames para la animación
+        frames = len(V_ir) + len(V_adiabat) + len(V_isobar) + len(V_adiabat_2) + len(V_isomet)
+
+        # Función de animación
+        def animate(i):
+            ax.clear()  # Limpiar la gráfica en cada frame
+
+            # Determinar la fase actual y dibujar el punto
+            if i < len(V_ir):  # Admisión
+                ax.plot(V_ir[-1-i], P_ir[-1-i], 'ro')
+            elif i < len(V_ir) + len(V_adiabat):  # Compresión adiabática
+                idx = i - len(V_ir)
+                ax.plot(V_adiabat[idx], P_adiabat[idx], 'ro')
+            elif i < len(V_ir) + len(V_adiabat) + len(V_isobar):  # Expansión isobárica
+                idx = i - len(V_ir) - len(V_adiabat)
+                ax.plot(V_isobar[idx], P_isobar[idx], 'ro')
+            elif i < len(V_ir) + len(V_adiabat) + len(V_isobar) + len(V_adiabat_2):  # Expansión adiabática
+                idx = i - len(V_ir) - len(V_adiabat) - len(V_isobar)
+                ax.plot(V_adiabat_2[idx], P_adiabat_2[idx], 'ro')
+            elif i < len(V_ir) + len(V_adiabat) + len(V_isobar) + len(V_adiabat_2) + len(V_isomet):  # Reducción isométrica
+                idx = i - len(V_ir) - len(V_adiabat) - len(V_isobar) - len(V_adiabat_2)
+                ax.plot(V_isomet[idx], P_isomet[idx], 'ro')
+            else:
+                ax.plot(V_ir[i], P_ir[i], 'ro')
+
+            # Volver a dibujar todas las curvas
+            ax.plot(V_ir, P_ir, label="Admisión", color='orange', linestyle='--')
+            ax.plot(V_adiabat, P_adiabat, label="Compresión adiabática", color='royalblue')
+            ax.plot(V_isobar, P_isobar, label="Expansión isobárica", color='darkcyan')
+            ax.plot(V_adiabat_2, P_adiabat_2, label="Expansión adiabática", color='firebrick')
+            ax.plot(V_isomet, P_isomet, label="Reducción isométrica", color='mediumseagreen')
+
+            # Etiquetas y título
+            ax.set_xlabel("Volumen (m³)")
+            ax.set_ylabel("Presión (Pa)")
+            ax.set_title("Ciclo Diesel en Diagrama PV")
+            ax.legend()
+            ax.grid()
+
+            return ax,
+
+        # Crear la animación con repetición indefinida y velocidad más rápida
+        ani = FuncAnimation(fig, animate, frames=frames, interval=50, repeat=True)
+
+        # Mostrar la animación
+        plt.show()
+        
+    return 0
+
+
+
+        
+        
