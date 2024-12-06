@@ -12,8 +12,13 @@ from matplotlib.animation import FuncAnimation
 
 # Constantes
 R = 8.31451 
-Q_comb_diesel = 43000000 #J/Kg
-Kgmol_aire = 0.02897 
+Q_comb_dodecano = 44120000 #J/Kg
+Kgmol_aire = 0.02897
+cp_N2 = 29.1
+cp_O2 = 29.4
+cp_CO2 = 39
+cp_H2O = 75.3
+
 
 ############################################################
 #definicion de los procesos para gases ideales
@@ -316,14 +321,14 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     m_aire = (V_cilindro*P_atm) / (287*T_ext)
     n_aire = (m_aire)/ Kgmol_aire
     m_diesel = m_aire / AFR
+    cp_comb_prom = 0.0955*cp_CO2 + 0.1035*cp_H2O + 0.7339*cp_N2 + 0.0481*cp_O2 
     V_min  = V_cilindro * (1/rc)
-    Q_isobar = Q_comb_diesel * (m_diesel* DCP)
+    Q_isobar = Q_comb_dodecano * (m_diesel* DCP)
     T_b = T_ext*(rc)**(gamma - 1)
-    T_c = (Q_isobar/(n_aire*cp)) + T_b
+    T_c = (Q_isobar/(n_aire*cp_comb_prom)) + T_b
     P_iso = (n_aire*R*T_b)/V_min
     V_c = (n_aire*R*T_c)/P_iso
     T_d = T_c*(V_c/V_cilindro)**(gamma - 1)
-    
     
     
     ######################################
@@ -346,7 +351,7 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     # Calores del ciclo térmico
     #################################################################
     Q_in = Q_isobar # Calor añadido en isobárica (B -> C)
-    Q_out = n_aire * cv * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
+    Q_out = n_aire * (cp_comb_prom - R) * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
 
     # Cálculo del porcentaje
     porcentaje_eficiencia = (1 + (Q_out / Q_in))* 100
@@ -490,5 +495,4 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
 
 
 
-        
-        
+diesel()
