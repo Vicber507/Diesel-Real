@@ -295,7 +295,7 @@ def diesel_igas(n,V_min,V_max,T_max,p_iso,gamma=1.4,cp=(7/2)*R,cv=(5/2) * R):
 ###############################################################
 
 
-def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,DCP = 0.98,  gamma=1.398, cp=29.16, cv= 20.85, s_0 =191.9, anim = False,PV = True,TV = True,TS = True, PVT = True ):
+def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,DCP = 0.98, cp=29.16, cv= 20.85, s_0 =191.9, anim = False,PV = True,TV = True,TS = True, PVT = True ):
     
     """
     Los valores default son los de un motor 2.0 TDI de Volkswagen.
@@ -316,8 +316,8 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     TS: diagrama TS
     PVT: diagrama PVT
     """
-    
-    
+
+    gamma = cp/cv    
     m_aire = (V_cilindro*P_atm) / (287*T_ext)
     n_aire = (m_aire)/ Kgmol_aire
     m_diesel = m_aire / AFR
@@ -354,8 +354,8 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
     Q_out = n_aire * (cp_comb_prom - R) * (T_ext - T_d) # Calor liberado en isocórica (D -> A)
 
     # Cálculo del porcentaje
-    porcentaje_eficiencia = (1 + (Q_out / Q_in))* 100
-    print(f"Porcentaje eficiencia: {porcentaje_eficiencia:.2f}%")
+    eficiencia = (1 + (Q_out / Q_in))* 100
+    print(f"Porcentaje eficiencia: {eficiencia:.2f}%")
     
     # Cálculo del trabajo
     work = -Q_in - Q_out
@@ -491,8 +491,6 @@ def diesel(V_cilindro = 5e-4 , P_atm = 101325,T_ext = 298 , rc = 16.5 ,AFR = 20,
         # Mostrar la animación
         plt.show()
         
-    return [porcentaje_eficiencia, work]
+    return [eficiencia, work]
 
 
-
-diesel()
